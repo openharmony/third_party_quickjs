@@ -1,0 +1,105 @@
+#Copyright (c) 2021 Huawei Device Co., Ltd.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
+import("//build/ohos.gni")
+
+config("qjs_inner_config") {
+  cflags = [
+    "-Wno-sign-compare",
+    "-Wno-unused-variable",
+    "-Wno-unused-function",
+    "-Wno-missing-braces",
+    "-fvisibility=hidden",
+    "-fdata-sections",
+    "-ffunction-sections",
+    "-Os",
+    "-fsigned-char",
+  ]
+  include_dirs = [ "." ]
+}
+
+config("qjs_debug_config") {
+  include_dirs = [ "." ]
+  cflags = [ "-DENABLE_JS_DEBUG" ]
+  include_dirs += [ "//utils/native/base/include" ]
+}
+
+qjs_sources = [
+  "cutils.c",
+  "libregexp.c",
+  "libunicode.c",
+  "quickjs-libc.c",
+  "quickjs.c",
+]
+
+ohos_static_library("qjs_debugger") {
+  sources = qjs_sources
+  sources += [
+    "debugger.c",
+    "message_server.cpp",
+  ]
+  if (!is_wearable_product) {
+    sources += [
+      "//utils/native/base/src/securec/memset_s.c",
+      "//utils/native/base/src/securec/securecutil.c",
+      "//utils/native/base/src/securec/secureprintoutput_a.c",
+      "//utils/native/base/src/securec/sprintf_s.c",
+      "//utils/native/base/src/securec/strcpy_s.c",
+      "//utils/native/base/src/securec/vsnprintf_s.c",
+      "//utils/native/base/src/securec/vsprintf_s.c",
+    ]
+  }
+  if (is_standard_system) {
+    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  } else {
+    external_deps = [ "hilog:libhilog" ]
+  }
+  configs = [ ":qjs_inner_config" ]
+  public_configs = [ ":qjs_debug_config" ]
+}
+
+ohos_static_library("qjs") {
+  sources = qjs_sources
+  configs = [ ":qjs_inner_config" ]
+}
+
+ohos_executable("qjsc") {
+  sources = [
+    "cutils.c",
+    "libregexp.c",
+    "libunicode.c",
+    "qjsc.c",
+    "quickjs-libc.c",
+    "quickjs.c",
+  ]
+
+  configs = [ ":qjs_inner_config" ]
+
+  defines = [ "CONFIG_VERSION=" ]
+
+  if (current_toolchain == "//build/toolchain/mingw:mingw_x86_64") {
+    ldflags = [ "-static" ]
+
+    libs = [ "pthread" ]
+  }
+
+  subsystem_name = "ace"
+  part_name = "ace_engine_full"
+}

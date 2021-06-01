@@ -1,0 +1,11 @@
+[
+    {
+        "Name": "QuickJS",
+        "License": "MIT License",
+        "License File": "LICENSE",
+        "Version Number": "2019-09-18",
+        "Owner": "zhaogaoyi@huawei.com",
+        "Upstream URL": "https://bellard.org/quickjs/",
+        "Description": "QuickJS is a small and embeddable Javascript engine. It supports the ES2020 specification including modules, asynchronous generators, proxies and BigInt."
+    }
+]
