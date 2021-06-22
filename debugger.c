@@ -136,6 +136,8 @@ static void DBG_SendMsg(DebuggerInfo *debuggerInfo, JSValue msgBody)
         JS_FreeValue(cx, jsValMsg);
         return;
     }
+
+    DEBUGGER_LOGI("DBG_SendMsg: %s", jsonStrMsg);
     char msglen[WRITE_MSG_LEN] = {0};
     if (sprintf_s(msglen, sizeof(msglen), "%08x\n", (int)len + 1) < 0) {
         JS_FreeCString(cx, jsonStrMsg);
@@ -865,10 +867,11 @@ static int DBG_IsLocEqual(DebuggerInfo *debuggerInfo, uint32_t depth, LocInfo lo
         DEBUGGER_LOGE("DBG_IsLocEqual fail debuggerInfo=NULL");
         return DBG_LOC_ISEQUAL;
     }
-    if (loc.line == 0) {
+    if (loc.line == 0 || loc.line == -1) {
         return DBG_LOC_ISEQUAL;
     }
-
+    DEBUGGER_LOGI("DBG_IsLocEqual last depth %d, this depth %d, last line %d, this line %d", debuggerInfo->depth,
+        depth, debuggerInfo->loc.line, loc.line);
     if ((debuggerInfo->depth == depth) && (debuggerInfo->loc.line == loc.line) &&
         (debuggerInfo->loc.filename == loc.filename)) {
         return DBG_LOC_ISEQUAL;
@@ -887,7 +890,11 @@ static int DBG_ProcessStepOperation(JSContext *cx, DebuggerInfo *debuggerInfo, c
     uint32_t depth = JS_GetStackDepth(cx);
     LocInfo loc = JS_GetCurrentLocation(cx, pc);
     if (debuggerInfo->stepOperation == STEP_CONTINUE) {
-        debuggerInfo->stepOperation = NO_STEP_OPERATION;
+        if (depth == debuggerInfo->depth) {
+            // Depth is equal indicates that current opcode's line is not the same as last one.
+            // Clear stepOperation so that it's possible to break on the same line inside loops.
+            debuggerInfo->stepOperation = NO_STEP_OPERATION;
+        }
         isNeedReadMsg = 0;
         return isNeedReadMsg;
     }
@@ -981,7 +988,10 @@ void DBG_CallDebugger(JSContext *cx, const uint8_t *pc)
     }
     // must check breakpotint first, then process step operation
     if (JS_HitBreakpoint(cx, pc) && JS_JudgeConditionBreakPoint(cx, pc)) {
+        LocInfo loc = JS_GetCurrentLocation(cx, pc);
+        DEBUGGER_LOGI("DBG_CallDebugger hit breakpoint at line: %d", loc.line);
         debuggerInfo->stepOperation = NO_STEP_OPERATION;
+        debuggerInfo->depth = JS_GetStackDepth(cx);
         DBG_SendStopMsg(debuggerInfo, "breakpoint");
         DBG_ProcessMsg(debuggerInfo, pc, 0);
         return;
