@@ -10721,7 +10721,12 @@ JSValue JS_ToStringInternal(JSContext *ctx, JSValueConst val, BOOL is_ToProperty
         if (is_ToPropertyKey) {
             return JS_DupValue(ctx, val);
         } else {
+#ifdef ENABLE_JS_DEBUG
+            str = "[object Object]";
+            goto new_string;
+#else
             return JS_ThrowTypeError(ctx, "cannot convert symbol to string");
+#endif
         }
 #ifdef CONFIG_BIGNUM
     case JS_TAG_FLOAT64:
