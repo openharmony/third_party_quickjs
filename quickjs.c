@@ -50935,3 +50935,10 @@ void JS_AceSetConstructor(JSContext *ctx,
 {
     JS_SetConstructor(ctx, func_obj, proto);
 }
+
+JSValue JS_GetNameSpace(JSContext *ctx, JSValueConst moduleVal)
+{
+    JSModuleDef *m;
+    m = JS_VALUE_GET_PTR(moduleVal);
+    return js_get_module_ns(ctx, m);
+}

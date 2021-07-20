@@ -923,6 +923,7 @@ int JS_JudgeConditionBreakPoint(JSContext *ctx, const uint8_t *pc);
 /* for ace 2.0 */
 int JS_CountClassInstances(JSRuntime* rt, uint16_t class_id);
 void JS_AceSetConstructor(JSContext *ctx, JSValueConst func_obj, JSValueConst proto);
+JSValue JS_GetNameSpace(JSContext *ctx, JSValueConst moduleVal);
 
 #undef js_unlikely
 #undef js_force_inline
