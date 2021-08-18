@@ -185,7 +185,6 @@ static void DBG_SendStopMsg(DebuggerInfo *debuggerInfo, const char *stopReason)
     JS_SetPropertyStr(cx, msgBody, "type", JS_NewString(cx, "event"));
     JS_SetPropertyStr(cx, msgBody, "event", stopEvent);
     DBG_SendMsg(debuggerInfo, msgBody);
-    JS_FreeValue(cx, stopEvent);
     JS_FreeValue(cx, msgBody);
 
     return;
@@ -271,7 +270,6 @@ static void DBG_StackTraceProcess(DebuggerInfo *debuggerInfo, JSValue msg, const
     }
     JSValue stackTrace = JS_BuildStackTrace(debuggerInfo->cx, curPc);
     DBG_SendResponseMsg(debuggerInfo, msg, stackTrace);
-    JS_FreeValue(debuggerInfo->cx, stackTrace);
 
     return;
 }
@@ -669,7 +667,6 @@ static void DBG_VariablesProcess(DebuggerInfo *debuggerInfo,
         properties = DBG_VariablesUnFilteredProcess(cx, variable, properties, state);
     }
     JS_FreeValue(cx, variable);
-    JS_FreeValue(cx, filter);
     JS_FreeValue(cx, args);
     DBG_SendResponseMsg(debuggerInfo, request, properties);
     JS_FreeValue(cx, properties);
@@ -708,7 +705,6 @@ static void DBG_EvaluateProcess(DebuggerInfo *debuggerInfo,
     JSValue body = JS_NewObject(cx);
     DBG_SetVariableProperty(cx, ret, body, "result");
     DBG_SetVariableType(cx, state, body, ret);
-    JS_FreeValue(cx, ret);
     DBG_SendResponseMsg(debuggerInfo, msg, body);
     JS_FreeValue(cx, body);
 
@@ -772,7 +768,6 @@ static int DBG_RequestProcess(DebuggerInfo *debuggerInfo,
         isNeedReadMsg = DBG_NEED_READ_MSG;
     }
     JS_FreeCString(cx, command);
-    JS_FreeValue(cx, jsCommand);
     JS_FreeValue(cx, jsRequestMsg);
 
     return isNeedReadMsg;
@@ -989,7 +984,8 @@ void DBG_CallDebugger(JSContext *cx, const uint8_t *pc)
     // must check breakpotint first, then process step operation
     if (JS_HitBreakpoint(cx, pc) && JS_JudgeConditionBreakPoint(cx, pc)) {
         LocInfo loc = JS_GetCurrentLocation(cx, pc);
-        DEBUGGER_LOGI("DBG_CallDebugger hit breakpoint at line: %d", loc.line);
+        DEBUGGER_LOGI("DBG_CallDebugger hit breakpoint at line %d", loc.line);
+
         debuggerInfo->stepOperation = NO_STEP_OPERATION;
         debuggerInfo->depth = JS_GetStackDepth(cx);
         DBG_SendStopMsg(debuggerInfo, "breakpoint");
