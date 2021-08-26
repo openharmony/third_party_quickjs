@@ -54526,3 +54526,15 @@ JSValue JS_GetNameSpace(JSContext *ctx, JSValueConst moduleVal)
     m = JS_VALUE_GET_PTR(moduleVal);
     return js_get_module_ns(ctx, m);
 }
+
+JSValue JS_AceNewInstance(JSContext *ctx, int classId, int argc, JSValueConst *argv)
+{
+    JSValue obj = JS_NewObjectClass(ctx, classId);
+    JSValue proto = JS_GetClassProto(ctx, classId);
+    JSValue ctor = JS_GetProperty(ctx, proto, JS_ATOM_constructor);
+    JSValue newInst = JS_CallConstructor2(ctx, ctor, obj, argc, argv);
+    JS_FreeValue(ctx, ctor);
+    JS_FreeValue(ctx, proto);
+    JS_FreeValue(ctx, obj);
+    return newInst;
+}
