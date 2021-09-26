@@ -55,21 +55,14 @@ ohos_static_library("qjs_debugger") {
     "debugger.c",
     "message_server.cpp",
   ]
+  external_deps = []
   if (!is_wearable_product) {
-    sources += [
-      "//utils/native/base/src/securec/memset_s.c",
-      "//utils/native/base/src/securec/securecutil.c",
-      "//utils/native/base/src/securec/secureprintoutput_a.c",
-      "//utils/native/base/src/securec/sprintf_s.c",
-      "//utils/native/base/src/securec/strcpy_s.c",
-      "//utils/native/base/src/securec/vsnprintf_s.c",
-      "//utils/native/base/src/securec/vsprintf_s.c",
-    ]
+    external_deps += [ "utils_base:utils" ]
   }
   if (is_standard_system) {
-    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+    external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
   } else {
-    external_deps = [ "hilog:libhilog" ]
+    external_deps += [ "hilog:libhilog" ]
   }
   configs = [ ":qjs_inner_config" ]
   public_configs = [ ":qjs_debug_config" ]
