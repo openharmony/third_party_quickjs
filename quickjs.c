@@ -9807,6 +9807,15 @@ void *JS_GetOpaque2(JSContext *ctx, JSValueConst obj, JSClassID class_id)
     return p;
 }
 
+void *JS_GetOpaque3(JSValueConst obj)
+{
+    JSObject *p;
+    if (JS_VALUE_GET_TAG(obj) != JS_TAG_OBJECT)
+        return NULL;
+    p = JS_VALUE_GET_OBJ(obj);
+    return p->u.opaque;
+}
+
 #define HINT_STRING  0
 #define HINT_NUMBER  1
 #define HINT_NONE    2
