@@ -54542,6 +54542,7 @@ JSValue JS_AceNewInstance(JSContext *ctx, int classId, int argc, JSValueConst *a
     JSValue proto = JS_GetClassProto(ctx, classId);
     JSValue ctor = JS_GetProperty(ctx, proto, JS_ATOM_constructor);
     JSValue newInst = JS_CallConstructor2(ctx, ctor, obj, argc, argv);
+    JS_SetPrototype(ctx, newInst, proto);
     JS_FreeValue(ctx, ctor);
     JS_FreeValue(ctx, proto);
     JS_FreeValue(ctx, obj);
