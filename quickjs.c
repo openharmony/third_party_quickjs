@@ -54488,19 +54488,12 @@ JSValue JS_JsonStringify(JSContext *ctx, JSValueConst this_val, int argc, JSValu
 #endif
 
 /* for ace 2.0 */
-/*int JS_CountClassInstances(JSRuntime* rt, uint16_t class_id)
+int JS_CountClassInstances(JSRuntime* rt, uint16_t class_id)
 {
     int count = 0;
-    struct list_head* el;
-    list_for_each(el, &rt->obj_list)
-    {
-        JSObject* p = list_entry(el, JSObject, link);
-        if (p->class_id == class_id) {
-            count++;
-        }
-    }
+    // TODO: should implement in new version
     return count;
-}*/
+}
 
 void *JS_GetOpaqueA(JSValueConst obj,
                     JSClassID* class_ids, size_t class_id_len)
