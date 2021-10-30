@@ -38,6 +38,7 @@
 #include <malloc.h>
 #endif
 
+#include "config.h"
 #include "cutils.h"
 #include "list.h"
 #include "quickjs.h"
@@ -54540,4 +54541,9 @@ JSValue JS_AceNewInstance(JSContext *ctx, int classId, int argc, JSValueConst *a
     JS_FreeValue(ctx, proto);
     JS_FreeValue(ctx, obj);
     return newInst;
+}
+
+JSValue JS_NewString16(JSContext *ctx, const uint16_t *buf, int len)
+{
+    return js_new_string16(ctx, buf, len);
 }

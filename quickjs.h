@@ -1072,6 +1072,8 @@ JSValue JS_AceNewInstance(JSContext *ctx, int classId, int argc, JSValueConst *a
 #undef js_unlikely
 #undef js_force_inline
 
+JSValue JS_NewString16(JSContext *ctx, const uint16_t *buf, int len);
+
 #ifdef __cplusplus
 } /* extern "C" { */
 #endif
