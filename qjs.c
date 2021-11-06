@@ -38,6 +38,7 @@
 #include <malloc.h>
 #endif
 
+#include "config.h"
 #include "cutils.h"
 #include "quickjs-libc.h"
 

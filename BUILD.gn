@@ -43,6 +43,7 @@ config("qjs_debug_config") {
 
 qjs_sources = [
   "cutils.c",
+  "libbf.c",
   "libregexp.c",
   "libunicode.c",
   "quickjs-libc.c",
@@ -76,6 +77,7 @@ ohos_static_library("qjs") {
 ohos_executable("qjsc") {
   sources = [
     "cutils.c",
+    "libbf.c",
     "libregexp.c",
     "libunicode.c",
     "qjsc.c",
