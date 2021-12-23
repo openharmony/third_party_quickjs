@@ -84,13 +84,13 @@ typedef struct LocInfo {
 
 typedef struct DebuggerInfo {
     JSContext *cx;
-    int client;
+    volatile int client;
     int stepOperation;
     uint32_t depth;
     LocInfo loc;
     JSValue breakpoints;
     int buildConnect;
-    int isConnected;
+    volatile int isConnected;
 } DebuggerInfo;
 
 typedef struct DebuggerVariableState {
@@ -108,7 +108,7 @@ JSValue JS_DebuggerEvaluate(JSContext *ctx, int stackIndex, JSValue expression);
 void DBG_FreeSources(JSContext *cx, DebuggerInfo *debuggerInfo);
 void DBG_CallDebugger(JSContext *cx, const uint8_t *pc);
 uint32_t DBG_GetValueAsUint32Type(JSContext *cx, JSValue obj, const char *property);
-void DBG_SetConnectFlag(int flag, int client);
+void DBG_SetDebugMode(bool isAttachMode);
 
 #ifdef __cplusplus
 }
