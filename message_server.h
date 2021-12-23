@@ -27,12 +27,13 @@
 extern "C" {
 #endif /* End of #ifdef __cplusplus */
 
-const char* QueueFront();
-void QueuePop();
-int QueueIsEmpty();
+const char* QueueFront(int client);
+void QueuePop(int client);
+int QueueIsEmpty(int client);
 void *DBG_StartAgent(void *args);
 bool DBG_CopyComponentNameFromAce(const char *srcStr, char *destStr, int maxLen);
-void DBG_SetComponentName(const char *name, int size);
+void DBG_SetComponentNameAndInstanceId(const char *name, int size, int instanceId);
+void DBG_SetNeedDebugBreakPoint(bool needDebugBreakPoint);
 
 #ifdef __cplusplus
 }

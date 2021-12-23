@@ -26,6 +26,7 @@
 #include <functional>
 #include <iostream>
 #include <list>
+#include <map>
 #include <string>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -36,7 +37,7 @@
 #include "securec.h"
 
 static std::mutex g_mtx;
-static std::list<std::string> g_readMsgQueue;
+static std::map<int, std::list<std::string>> g_readMsgQueues;
 static constexpr int MSG_LEN = 9;
 static constexpr int MAX_CONNECT_CLIENT_NUM = 1;
 
@@ -49,25 +50,25 @@ bool DBG_CopyComponentNameFromAce(const char *srcStr, char *destStr, int maxLen)
     return true;
 }
 
-const char* QueueFront()
+const char* QueueFront(int client)
 {
     g_mtx.lock();
-    const char* res = g_readMsgQueue.front().c_str();
+    const char* res = g_readMsgQueues[client].front().c_str();
     g_mtx.unlock();
     return res;
 }
 
-void QueuePop()
+void QueuePop(int client)
 {
     g_mtx.lock();
-    g_readMsgQueue.pop_front();
+    g_readMsgQueues[client].pop_front();
     g_mtx.unlock();
 }
 
-int QueueIsEmpty()
+int QueueIsEmpty(int client)
 {
     g_mtx.lock();
-    int ret = g_readMsgQueue.empty();
+    int ret = g_readMsgQueues[client].empty();
     g_mtx.unlock();
     return ret;
 }
@@ -132,21 +133,30 @@ static void ReadMsg(int client)
     msgBuf.get()[msgLen] = '\0';
     DEBUGGER_LOGI("dbg msg %s", msgBuf.get());
     std::string message(msgBuf.get());
-    g_readMsgQueue.push_back(message);
+    g_readMsgQueues[client].push_back(message);
     g_mtx.unlock();
 
     return;
 }
 
-static std::string g_componentName;
 
-void DBG_SetComponentName(const char *name, int size)
+static std::string g_componentName;
+static int g_instanceId;
+
+void DBG_SetComponentNameAndInstanceId(const char *name, int size, int instanceId)
 {
     if (size <= 0) {
         DEBUGGER_LOGE("DBG_SetComponentName fail");
         return;
     }
     g_componentName = name;
+    g_instanceId = instanceId;
+}
+
+void DBG_SetNeedDebugBreakPoint(bool needDebugBreakPoint)
+{
+    DEBUGGER_LOGI("NeedDebugBreakPoint: %d", needDebugBreakPoint);
+    DBG_SetDebugMode(!needDebugBreakPoint);
 }
 
 static std::string DBG_GetComponentName()
@@ -164,10 +174,10 @@ static int DBG_StartServer()
     if (fd < 0) {
         return FAIL_CAUSE_SOCKET_COMMON_FAIL;
     }
-    int appPid = getpid();
-    std::string pidStr = std::to_string(appPid);
+
+    std::string instanceIdStr = std::to_string(g_instanceId);
     std::string component = DBG_GetComponentName();
-    std::string sockName = pidStr + component;
+    std::string sockName = instanceIdStr + component;
     struct sockaddr_un  un;
     if (memset_s(&un, sizeof(un), 0, sizeof(un)) != EOK) {
         DEBUGGER_LOGE("DBG_StartServer memset_s fail");
@@ -201,12 +211,21 @@ static int DBG_StartServer()
 void *DBG_StartAgent(void *args)
 {
     int client = DBG_StartServer();
-    DEBUGGER_LOGI("DBG_StartAgent client = %d", client);
     if (client < 0) {
         DEBUGGER_LOGE("DBG_StartAgent fail");
         return nullptr;
     }
-    DBG_SetConnectFlag(1, client);
+
+    auto debugger_info = (DebuggerInfo*)args;
+    g_mtx.lock();
+    debugger_info->client = client;
+    debugger_info->isConnected = 1;
+    g_mtx.unlock();
+
+    std::list<std::string> messageList;
+    g_readMsgQueues[client] = messageList;
+    DEBUGGER_LOGI("DBG_StartAgent client = %d", client);
+
     while (true) {
         ReadMsg(client);
     }

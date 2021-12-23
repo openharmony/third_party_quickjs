@@ -426,7 +426,7 @@ struct JSContext {
     JSShape *array_shape;   /* initial shape for Array objects */
 
 #ifdef ENABLE_JS_DEBUG
-    DebuggerInfo debugger_info;
+    DebuggerInfo *debugger_info;
 #endif
 
     JSValue *class_proto;
@@ -2146,8 +2146,17 @@ JSContext *JS_NewContextRaw(JSRuntime *rt)
     ctx->header.ref_count = 1;
     add_gc_object(rt, &ctx->header, JS_GC_OBJ_TYPE_JS_CONTEXT);
 
+#ifdef ENABLE_JS_DEBUG
+    ctx->debugger_info = js_malloc_rt(rt, sizeof(DebuggerInfo));
+    if (!ctx->debugger_info) {
+        DEBUGGER_LOGE("Create debugger_info failed!");
+        return NULL;
+    }
+#endif
+
     ctx->class_proto = js_malloc_rt(rt, sizeof(ctx->class_proto[0]) *
                                     rt->class_count);
+
     if (!ctx->class_proto) {
         js_free_rt(rt, ctx);
         return NULL;
@@ -16204,7 +16213,7 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
     };
 #define SWITCH(pc)      goto *active_dispatch_table[opcode = *pc++];
 #define CASE(op)        case_debugger_ ## op: DBG_CallDebugger(caller_ctx, pc); case_ ## op
-    const void * const * active_dispatch_table = caller_ctx->debugger_info.isConnected
+    const void * const * active_dispatch_table = caller_ctx->debugger_info->isConnected
         ? debugger_dispatch_table : dispatch_table;
 #else
 #define SWITCH(pc)      goto *dispatch_table[opcode = *pc++];
@@ -54209,7 +54218,7 @@ DebuggerInfo *JS_GetDebuggerInfo(JSContext *cx)
     if (cx == NULL) {
         return NULL;
     }
-    return &cx->debugger_info;
+    return cx->debugger_info;
 }
 
 static int JS_FunctionDefineInit(JSContext *ctx, JSFunctionDef *fd, JSFunctionBytecode *byte_code)
