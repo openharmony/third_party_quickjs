@@ -32,22 +32,13 @@
 
 #include "message_server.h"
 
-static int g_connectFlag = 0;
-static int g_client = 0;
-void DBG_SetConnectFlag(int flag, int client)
-{
-    g_connectFlag = flag;
-    g_client = client;
-}
+static __thread bool g_isServerStarted = 0;
+static __thread bool g_isBreakPointSet = 0;
+static __thread bool g_isAttachMode = 0;
 
-static int DBG_IsConnect()
+void DBG_SetDebugMode(bool isAttachMode)
 {
-    return g_connectFlag;
-}
-
-static int DBG_GetClient()
-{
-    return g_client;
+    g_isAttachMode = isAttachMode;
 }
 
 static int DBG_ConnectToIde()
@@ -102,14 +93,14 @@ static JSValue DBG_ReadMsg(DebuggerInfo *debuggerInfo)
         DEBUGGER_LOGE("DBG_ReadMsg fail debuggerInfo=NULL");
         return JS_UNDEFINED;
     }
-    while (QueueIsEmpty()) {
+    while (QueueIsEmpty(debuggerInfo->client)) {
         usleep(DBG_WAITING_TIME);
     }
 
-    const char *message = QueueFront();
+    const char *message = QueueFront(debuggerInfo->client);
     DEBUGGER_LOGI("DBG_ReadMsg %s", message);
     JSValue msg = JS_ParseJSON(debuggerInfo->cx, message, strlen(message), "<debugger>");
-    QueuePop();
+    QueuePop(debuggerInfo->client);
 
     return msg;
 }
@@ -850,9 +841,9 @@ static void DBG_Entry(JSContext *cx, int client)
         return;
     }
     debuggerInfo->cx = cx;
-    debuggerInfo->client = client;
+    // debuggerInfo->client = client;
     debuggerInfo->breakpoints = JS_NewObject(cx);
-    debuggerInfo->isConnected = 1;
+    // debuggerInfo->isConnected = 1;
     DBG_SendStopMsg(debuggerInfo, "entry");
 }
 
@@ -954,21 +945,33 @@ void DBG_CallDebugger(JSContext *cx, const uint8_t *pc)
         DEBUGGER_LOGE("DBG_CallDebugger fail debuggerInfo=NULL");
         return;
     }
-    if (debuggerInfo->isConnected == 0) {
+
+    if (!g_isServerStarted) {
         pthread_t tid;
-        if (pthread_create(&tid, NULL, &DBG_StartAgent, NULL) != 0) {
+        if (pthread_create(&tid, NULL, &DBG_StartAgent, (void*)debuggerInfo) != 0) {
             DEBUGGER_LOGE("pthread_create fail!");
             return;
         }
-        while (DBG_IsConnect() == 0) {
-            usleep(DBG_WAITING_TIME);
+        g_isServerStarted = true;
+        if (!g_isAttachMode) {
+            while (debuggerInfo->isConnected != 1) {
+                usleep(DBG_WAITING_TIME);
+            }
+            DBG_Entry(cx, debuggerInfo->client);
+            // read msg when first time must be breakpoints msg, and set breakpoints to debugger
+            DBG_ProcessMsg(debuggerInfo, pc, 0);
+            g_isBreakPointSet = true;
         }
-        DBG_Entry(cx, DBG_GetClient());
-        // read msg when first time must be breakpoints msg, and set breakpoints to debugger
-        DBG_ProcessMsg(debuggerInfo, pc, 0);
     }
 
-    if (QueueIsEmpty() == 0) {
+    if (g_isAttachMode && (debuggerInfo->isConnected == 1 && !g_isBreakPointSet)) {
+            // ide attached, accept breakpoints msg
+            DBG_Entry(cx, debuggerInfo->client);
+            DBG_ProcessMsg(debuggerInfo, pc, 0);
+            g_isBreakPointSet = true;
+    }
+
+    if (QueueIsEmpty(debuggerInfo->client) == 0) {
         DBG_ProcessMsg(debuggerInfo, pc, 1);
     }
 
@@ -982,7 +985,7 @@ void DBG_CallDebugger(JSContext *cx, const uint8_t *pc)
         }
     }
     // must check breakpotint first, then process step operation
-    if (JS_HitBreakpoint(cx, pc) && JS_JudgeConditionBreakPoint(cx, pc)) {
+    if (g_isBreakPointSet && JS_HitBreakpoint(cx, pc) && JS_JudgeConditionBreakPoint(cx, pc)) {
         LocInfo loc = JS_GetCurrentLocation(cx, pc);
         DEBUGGER_LOGI("DBG_CallDebugger hit breakpoint at line %d", loc.line);
 
