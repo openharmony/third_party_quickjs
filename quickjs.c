@@ -18707,6 +18707,12 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
 JSValue JS_Call(JSContext *ctx, JSValueConst func_obj, JSValueConst this_obj,
                 int argc, JSValueConst *argv)
 {
+#ifdef ENABLE_JS_DEBUG
+    DebuggerInfo *debugger_info = JS_GetDebuggerInfo(ctx);
+    if (debugger_info != NULL) {
+        debugger_info->stepOperation = NO_STEP_OPERATION;
+    }
+#endif
     return JS_CallInternal(ctx, func_obj, this_obj, JS_UNDEFINED,
                            argc, (JSValue *)argv, JS_CALL_FLAG_COPY_ARGV);
 }
