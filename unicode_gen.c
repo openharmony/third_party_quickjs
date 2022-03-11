@@ -101,18 +101,22 @@ const char *get_field_buf(char *buf, size_t buf_size, const char *p, int n)
 
 void add_char(int **pbuf, int *psize, int *plen, int c)
 {
-    int len, size, *buf;
-    buf = *pbuf;
+    int len, size;
     size = *psize;
     len = *plen;
     if (len >= size) {
         size = *psize;
         size = max_int(len + 1, size * 3 / 2);
-        buf = realloc(buf, sizeof(buf[0]) * size);
-        *pbuf = buf;
-        *psize = size;
+        int *buf = realloc(*pbuf, sizeof((*pbuf)[0]) * size);
+        if (!buf) {
+            sprintf(stderr, "relloc failed. file:%s func:%s line:%d", __FILE__, __FUNCTION__, __LINE__);
+            exit(1);
+        } else {
+            *pbuf = buf;
+            *psize = size;
+        }
     }
-    buf[len++] = c;
+    (*pbuf)[len++] = c;
     *plen = len;
 }
 
