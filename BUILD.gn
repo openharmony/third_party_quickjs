@@ -88,6 +88,6 @@ ohos_executable("qjsc") {
     libs = [ "pthread" ]
   }
 
-  subsystem_name = "ace"
+  subsystem_name = "arkui"
   part_name = "ace_engine_full"
 }
