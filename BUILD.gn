@@ -15,6 +15,7 @@ import("//build/ohos.gni")
 
 config("qjs_inner_config") {
   cflags = [
+    "-Wno-pointer-to-int-cast",
     "-Wno-sign-compare",
     "-Wno-unused-variable",
     "-Wno-unused-function",
