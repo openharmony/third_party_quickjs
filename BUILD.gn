@@ -32,7 +32,7 @@ config("qjs_inner_config") {
 config("qjs_debug_config") {
   include_dirs = [ "." ]
   cflags = [ "-DENABLE_JS_DEBUG" ]
-  include_dirs += [ "//utils/native/base/include" ]
+  include_dirs += [ "//commonlibrary/c_utils/base/include" ]
 }
 
 qjs_sources = [
@@ -52,7 +52,7 @@ ohos_static_library("qjs_debugger") {
   ]
   external_deps = []
   if (!is_wearable_product) {
-    external_deps += [ "utils_base:utils" ]
+    external_deps += [ "c_utils:utils" ]
   }
   if (is_standard_system) {
     external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
